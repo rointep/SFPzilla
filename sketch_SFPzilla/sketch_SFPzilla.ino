@@ -455,6 +455,8 @@ int       i;
     return;    
   }
 
+  if( size==0x00 ) size=0x100;
+  
   if( (SFP_mem_offset+size) > 0x100 )
   {
     size = 0x100-SFP_mem_offset;
