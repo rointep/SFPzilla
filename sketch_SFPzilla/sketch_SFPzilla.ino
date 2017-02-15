@@ -1,3 +1,4 @@
+
 /**********************************************/
 /*             I N C L U D E S                */
 /**********************************************/
@@ -24,7 +25,7 @@ int cmdStr2Num(char *str, uint8_t base, uint16_t *val);
 
 
 
-#define MAX_MSG_SIZE    60
+#define MAX_MSG_SIZE    100
 
 // command line message buffer and pointer
 static uint8_t msg[MAX_MSG_SIZE];
@@ -49,8 +50,10 @@ const char str_help8[] PROGMEM = "dump_bank_a0  (dump standard SFP bank A0 - dev
 const char str_help9[] PROGMEM = "dump_bank_a2  (dump standard SFP bank A2 - device=0x51)";
 const char str_help10[] PROGMEM = "dump_bank_b0  (dump standard SFP bank B0 - device=0x58)";
 const char str_help11[] PROGMEM = "dump_bank_b2  (dump standard SFP bank B2 - device=0x59)";
-const char str_help12[] PROGMEM = "version";
-const char str_help13[] PROGMEM = "help";
+const char str_help12[] PROGMEM = "echo on       (set the echo for command ON)";
+const char str_help13[] PROGMEM = "echo off      (set the echo for command OFF)";
+const char str_help14[] PROGMEM = "version";
+const char str_help15[] PROGMEM = "help";
 
 static Stream* stream;
 
@@ -98,6 +101,7 @@ void  cmd_ping(int arg_cnt, char **args);
 void  cmd_write(int arg_cnt, char **args);
 void  cmd_read(int arg_cnt, char **args);
 void  cmd_power(int arg_cnt, char **args);
+void  cmd_echo(int arg_cnt, char **args);
 void  cmd_device(int arg_cnt, char **args);
 void  cmd_offset(int arg_cnt, char **args);
 void  cmd_A0(int arg_cnt, char **args);
@@ -123,6 +127,8 @@ uint16_t      SFP_mem_offset=0;       /* set by cmd_offset() */
 char          SFP_power_state=SFP_OFF;
 char          LED_color_state=LED_OFF;
 
+int           echo_ctrl = 1;
+
 /********************************************************/
 /*     F U N C T I O N S                                */
 /********************************************************/
@@ -147,6 +153,7 @@ void setup()
   cmdAdd("write", cmd_write);
   cmdAdd("read", cmd_read);
   cmdAdd("power", cmd_power);
+  cmdAdd("echo", cmd_echo);
   cmdAdd("device", cmd_device);
   cmdAdd("offset", cmd_offset);
   cmdAdd("conf", cmd_conf);
@@ -189,6 +196,8 @@ void  cmd_response(char stat)
 /*****************************************/
 void  cmd_conf(int arg_cnt, char **args)
 {
+  led_ctrl(LED_RED);
+  delay(100);
   if( arg_cnt!=1 )
   {
     cmd_response(STAT_FAIL);
@@ -205,6 +214,9 @@ void  cmd_version(int arg_cnt, char **args)
 {
 char buf[40];
 
+  led_ctrl(LED_RED);
+  delay(100);
+  
   if( arg_cnt!=1 )
   {
     cmd_response(STAT_FAIL);
@@ -223,6 +235,9 @@ void  cmd_help(int arg_cnt, char **args)
 {
     char buf[100];
 
+  led_ctrl(LED_RED);
+  delay(100);
+  
   if( arg_cnt!=1 )
   {
     cmd_response(STAT_FAIL);
@@ -258,6 +273,10 @@ void  cmd_help(int arg_cnt, char **args)
     stream->println(buf);
     strcpy_P(buf, str_help13);
     stream->println(buf);
+    strcpy_P(buf, str_help14);
+    stream->println(buf);
+    strcpy_P(buf, str_help15);
+    stream->println(buf);
     cmd_response(STAT_OK);
 }
 
@@ -266,6 +285,8 @@ void  cmd_help(int arg_cnt, char **args)
 /*****************************************/
 void  cmd_ping(int arg_cnt, char **args)
 {
+  led_ctrl(LED_RED);
+  delay(10);
   cmd_response(STAT_OK);    /* just set OK status */
 }
 
@@ -572,6 +593,32 @@ void  cmd_power(int arg_cnt, char **args)
 }
 
 /*****************************************/
+/*     cmd_power()                       */
+/*****************************************/
+void  cmd_echo(int arg_cnt, char **args)
+{
+  led_ctrl(LED_RED);
+  delay(100);
+  if( arg_cnt!=2 )
+  {
+    cmd_response(STAT_FAIL);
+    return;
+  }
+  if( !strcmp(args[1],"on") )
+  {
+    echo_ctrl = 1;
+    cmd_response(STAT_OK);    
+  }
+  else if( !strcmp(args[1],"off") )
+  {
+    echo_ctrl = 0;
+    cmd_response(STAT_OK);    
+  }
+  else
+      cmd_response(STAT_FAIL);
+
+}
+/*****************************************/
 /*     led_ctrl()                        */
 /*****************************************/
 void  led_ctrl(int mode)
@@ -711,7 +758,7 @@ void cmd_parse(char *cmd)
 {
     uint8_t argc, i = 0;
     char *argv[30];
-    char buf[50];
+    char buf[100];
     cmd_t *cmd_entry;
 
     fflush(stdout);
@@ -764,14 +811,16 @@ void cmd_handler()
         // terminate the msg and reset the msg ptr. then send
         // it to the handler for processing.
         *msg_ptr = '\0';
-        stream->print("\r\n");
+        if( echo_ctrl )
+          stream->print("\r\n");
         cmd_parse((char *)msg);
         msg_ptr = msg;
         break;
 
     case '\b':
         // backspace
-        stream->print(c);
+        if( echo_ctrl )
+          stream->print(c);
         if (msg_ptr > msg)
         {
             msg_ptr--;
@@ -780,10 +829,12 @@ void cmd_handler()
 
     default:
         // normal character entered. add it to the buffer
-        stream->print(c);
+        if( echo_ctrl )
+          stream->print(c);
         *msg_ptr++ = c;
         break;
     }
+ 
 }
 
 /**************************************************************************/
