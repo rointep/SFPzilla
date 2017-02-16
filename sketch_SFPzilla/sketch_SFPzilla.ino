@@ -37,7 +37,7 @@ static cmd_t *cmd_tbl_list, *cmd_tbl;
 // text strings for command prompt (stored in flash)
 
 const char cmd_unrecog[] PROGMEM = "FAIL";
-const char str_version[] PROGMEM = "Version 1.0";
+const char str_version[] PROGMEM = "Version 1.1";
 const char str_help1[] PROGMEM = "ping";
 const char str_help2[] PROGMEM = "device <DD>   (set i2c device address to 0x<DD>)";
 const char str_help3[] PROGMEM = "offset <OO>   (set i2c mem offset to 0x<OO>)";
@@ -127,7 +127,7 @@ uint16_t      SFP_mem_offset=0;       /* set by cmd_offset() */
 char          SFP_power_state=SFP_OFF;
 char          LED_color_state=LED_OFF;
 
-int           echo_ctrl = 1;
+int           echo_ctrl = 0;
 
 /********************************************************/
 /*     F U N C T I O N S                                */
@@ -765,6 +765,9 @@ void cmd_parse(char *cmd)
 
     fflush(stdout);
 
+    led_ctrl(LED_RED);
+    delay(100);
+  
     // parse the command line statement and break it up into space-delimited
     // strings. the array of strings will be saved in the argv array.
     argv[i] = strtok(cmd, " ");
