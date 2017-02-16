@@ -428,6 +428,5 @@ namespace SFPzilla {
         public String ByteArrayToString(byte[] b) {
             return BitConverter.ToString(b).Replace("-", " ").ToUpper();
         }
-
     }
 }
