@@ -236,7 +236,7 @@
             // 
             this.readSelectedToolStripMenuItem.Image = global::SFPzilla.Properties.Resources.less;
             this.readSelectedToolStripMenuItem.Name = "readSelectedToolStripMenuItem";
-            this.readSelectedToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.readSelectedToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
             this.readSelectedToolStripMenuItem.Text = "Selected";
             this.readSelectedToolStripMenuItem.Click += new System.EventHandler(this.toolStripButton5_Click);
             // 
@@ -244,7 +244,7 @@
             // 
             this.readAllToolStripMenuItem.Image = global::SFPzilla.Properties.Resources.more;
             this.readAllToolStripMenuItem.Name = "readAllToolStripMenuItem";
-            this.readAllToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.readAllToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
             this.readAllToolStripMenuItem.Text = "All";
             this.readAllToolStripMenuItem.Click += new System.EventHandler(this.readAllToolStripMenuItem_Click);
             // 
@@ -638,7 +638,7 @@
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.ReadOnly = true;
             this.richTextBox1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.richTextBox1.Size = new System.Drawing.Size(333, 542);
+            this.richTextBox1.Size = new System.Drawing.Size(325, 544);
             this.richTextBox1.TabIndex = 4;
             this.richTextBox1.Text = "";
             this.richTextBox1.TextChanged += new System.EventHandler(this.richTextBox1_TextChanged);
@@ -646,9 +646,9 @@
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(279, 572);
+            this.button1.Location = new System.Drawing.Point(268, 571);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(57, 28);
+            this.button1.Size = new System.Drawing.Size(60, 28);
             this.button1.TabIndex = 3;
             this.button1.Text = "Run";
             this.button1.UseVisualStyleBackColor = true;
@@ -659,9 +659,9 @@
             this.textBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.textBox2.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox2.Location = new System.Drawing.Point(3, 573);
+            this.textBox2.Location = new System.Drawing.Point(3, 572);
             this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(270, 26);
+            this.textBox2.Size = new System.Drawing.Size(263, 26);
             this.textBox2.TabIndex = 2;
             this.textBox2.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox2_KeyDown);
             // 

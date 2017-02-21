@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO.Ports;
 using System.IO;
 using System.Management;
+using System.Runtime.InteropServices;
 using Be.Windows.Forms;
 
 
@@ -368,13 +365,14 @@ namespace SFPzilla {
                 toolStripComboBox1.Items.Clear();
 
                 using (var searcher = new ManagementObjectSearcher
-                ("SELECT * FROM WIN32_SerialPort")) {
+                ("SELECT * FROM Win32_SerialPort")) {
                     string[] portnames = SerialPort.GetPortNames();
                     var ports = searcher.Get().Cast<ManagementBaseObject>().ToList();
                     var tList = (from n in portnames
                                  join p in ports on n equals p["DeviceID"].ToString()
                                  select n + " - " + p["Caption"]).ToList();
 
+                   
                     int idx = 0;
                     bool matched = false;
                     foreach (String s in tList) {
@@ -428,5 +426,6 @@ namespace SFPzilla {
         public String ByteArrayToString(byte[] b) {
             return BitConverter.ToString(b).Replace("-", " ").ToUpper();
         }
+
     }
 }
