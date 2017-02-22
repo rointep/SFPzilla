@@ -37,7 +37,7 @@ static cmd_t *cmd_tbl_list, *cmd_tbl;
 // text strings for command prompt (stored in flash)
 
 const char cmd_unrecog[] PROGMEM = "FAIL";
-const char str_version[] PROGMEM = "Version 1.1";
+const char str_version[] PROGMEM = "Version 2.0";
 const char str_help1[] PROGMEM = "ping";
 const char str_help2[] PROGMEM = "device <DD>   (set i2c device address to 0x<DD>)";
 const char str_help3[] PROGMEM = "offset <OO>   (set i2c mem offset to 0x<OO>)";
@@ -660,12 +660,12 @@ void  pwr_ctrl(int mode)
 
     if( mode==SFP_ON )
     {
-      digitalWrite(SFP_POWER_PIN, LOW);
+      digitalWrite(SFP_POWER_PIN, HIGH);
       led_ctrl(LED_color_state);
     }
     if( mode==SFP_OFF )
     {
-      digitalWrite(SFP_POWER_PIN, HIGH);
+      digitalWrite(SFP_POWER_PIN, LOW);
       /* turn both leds off, but do not change the variable */
       digitalWrite(LED_RED_PIN, LOW);
       digitalWrite(LED_GREEN_PIN, LOW);
