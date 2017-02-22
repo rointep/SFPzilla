@@ -155,27 +155,33 @@ namespace SFPzilla {
             openDialog.FilterIndex = 1;
 
             if (openDialog.ShowDialog() == DialogResult.OK) {
-                byte[] data = File.ReadAllBytes(openDialog.FileName);
+                try {
+                    byte[] data;
+                    String contents = File.ReadAllText(openDialog.FileName);
+                    data = StringToByteArray(contents.Trim().Replace("\n", " "));
 
-                HexBox control;
+                    HexBox control;
 
-                switch (tabControl1.SelectedIndex) {
-                    default:
-                    case 0:
-                        control = hexViewerA0;
-                        break;
-                    case 1:
-                        control = hexViewerA2;
-                        break;
-                    case 2:
-                        control = hexViewerB0;
-                        break;
-                    case 3:
-                        control = hexViewerB2;
-                        break;
+                    switch (tabControl1.SelectedIndex) {
+                        default:
+                        case 0:
+                            control = hexViewerA0;
+                            break;
+                        case 1:
+                            control = hexViewerA2;
+                            break;
+                        case 2:
+                            control = hexViewerB0;
+                            break;
+                        case 3:
+                            control = hexViewerB2;
+                            break;
+                    }
+
+                    control.ByteProvider = new DynamicByteProvider(data);
+                } catch (Exception ex) {
+                    MessageBox.Show(ex.Message, "Error opening file", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-
-                control.ByteProvider = new DynamicByteProvider(data);
             }
         }
 
@@ -219,7 +225,7 @@ namespace SFPzilla {
             
             if (saveDialog.ShowDialog() == DialogResult.OK) {
                 try {
-                    File.WriteAllBytes(saveDialog.FileName, data.ToArray());
+                    File.WriteAllText(saveDialog.FileName, ByteArrayToFormattedString(data.ToArray()));
                 } catch (Exception ex) {
                     MessageBox.Show(ex.Message, "Error saving file", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -425,6 +431,23 @@ namespace SFPzilla {
 
         public String ByteArrayToString(byte[] b) {
             return BitConverter.ToString(b).Replace("-", " ").ToUpper();
+        }
+
+        public String ByteArrayToFormattedString(byte[] b, int bytesPerLine = 16) {
+            String s = "";
+            bool nl = true;
+            int i = 1;
+            foreach (byte bY in b) {
+                s += (nl ? "" : " ") + bY.ToString("X2") + (i < bytesPerLine ? "" : "\n");
+                nl = false;
+                if (i >= bytesPerLine) {
+                    i = 1;
+                    nl = true;
+                } else {
+                    i++;
+                }
+            }
+            return s;
         }
 
     }

@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "SFPzilla"
-!define PRODUCT_VERSION "1.0.0.1"
+!define PRODUCT_VERSION "1.0.0.2"
 !define PRODUCT_PUBLISHER "Matej Gorjanc"
 !define PRODUCT_WEB_SITE "https://github.com/rointep/SFPzilla"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\SFPzilla.exe"
