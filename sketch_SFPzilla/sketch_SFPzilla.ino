@@ -22,7 +22,7 @@ void cmdInit(Stream *);
 void cmdPoll();
 void cmdAdd(char *name, void (*func)(int argc, char **argv));
 int cmdStr2Num(char *str, uint8_t base, uint16_t *val);
-
+int cmdStr2Num16(char *str, uint8_t base, uint16_t *val);
 
 
 #define MAX_MSG_SIZE    100
@@ -37,15 +37,15 @@ static cmd_t *cmd_tbl_list, *cmd_tbl;
 // text strings for command prompt (stored in flash)
 
 const char cmd_unrecog[] PROGMEM = "FAIL";
-const char str_version[] PROGMEM = "Version 2.0";
+const char str_version[] PROGMEM = "Version 2.1";
 const char str_help1[] PROGMEM = "ping";
 const char str_help2[] PROGMEM = "device <DD>   (set i2c device address to 0x<DD>)";
 const char str_help3[] PROGMEM = "offset <OO>   (set i2c mem offset to 0x<OO>)";
 const char str_help3a[] PROGMEM = "conf          (print current device/offset config)";
 const char str_help4[] PROGMEM = "power on      (set the SFP power ON)";
 const char str_help5[] PROGMEM = "power off     (set the SFP power OFF)";
-const char str_help6[] PROGMEM = "read <NN>     (read 0x<NN> bytes from SFP device 0x<DD> at offset 0x<OO>";
-const char str_help7[] PROGMEM = "write <dd> <dd> ... (write data <dd>.. to SFP device 0x<DD> at offset 0x<OO> - max. 16 bytes";
+const char str_help6[] PROGMEM = "read <NN>     (read 0x<NN> bytes from SFP device 0x<DD> at offset 0x<OO>)";
+const char str_help7[] PROGMEM = "write <dd> <dd> ... (write data <dd>.. to SFP device 0x<DD> at offset 0x<OO> - max. 16 bytes)";
 const char str_help8[] PROGMEM = "dump_bank_a0  (dump standard SFP bank A0 - device=0x50)";
 const char str_help9[] PROGMEM = "dump_bank_a2  (dump standard SFP bank A2 - device=0x51)";
 const char str_help10[] PROGMEM = "dump_bank_b0  (dump standard SFP bank B0 - device=0x58)";
@@ -55,6 +55,8 @@ const char str_help13[] PROGMEM = "echo off      (set the echo for command OFF)"
 const char str_help14[] PROGMEM = "version";
 const char str_help15[] PROGMEM = "help";
 const char str_help16[] PROGMEM = "dump_bank_ac  (dump SFP bank AC - device=0x56)";
+const char str_help17[] PROGMEM = "read16 <NN>     (16bit-read 0x<NN> bytes from SFP device 0x<DD> at offset 0x<OO>)";
+const char str_help18[] PROGMEM = "write16 <dddd> <dddd> ... 16-bit(write data <dd>.. to SFP device 0x<DD> at offset 0x<OO> - max. 16 words)";
 
 static Stream* stream;
 
@@ -120,6 +122,8 @@ void  cmd_response(char stat);
 
 void  SFP_DUMP(uint8_t sfp_bank);
 void  SFP_DUMP16(uint8_t sfp_bank);
+void  cmd_write16(int arg_cnt, char **args);
+void  cmd_read16(int arg_cnt, char **args);
 
 /********************************************************/
 /*     G L O B A L   D A T A                            */
@@ -169,6 +173,9 @@ void setup()
   cmdAdd((char*)"dump_bank_ac", cmd_AC);
   cmdAdd((char*)"help", cmd_help);
   cmdAdd((char*)"version", cmd_version);
+  cmdAdd((char*)"write16", cmd_write16);
+  cmdAdd((char*)"read16", cmd_read16);
+
   cmd_response(STAT_OK);
 
   Wire.begin();     /* Init i2c */
@@ -239,7 +246,7 @@ char buf[40];
 /*****************************************/
 void  cmd_help(int arg_cnt, char **args)
 {
-    char buf[100];
+    char buf[150];
 
   led_ctrl(LED_RED);
   delay(100);
@@ -284,6 +291,10 @@ void  cmd_help(int arg_cnt, char **args)
     strcpy_P(buf, str_help15);
     stream->println(buf);
     strcpy_P(buf, str_help16);
+    stream->println(buf);
+    strcpy_P(buf, str_help17);
+    stream->println(buf);
+    strcpy_P(buf, str_help18);
     stream->println(buf);
     cmd_response(STAT_OK);
 }
@@ -435,6 +446,94 @@ byte      tmp;
 }
 
 /*****************************************/
+/*     cmd_write16()                     */
+/*****************************************/
+void  cmd_write16(int arg_cnt, char **args)
+{
+int       stat;
+int       i;
+uint16_t  dat[20];
+uint16_t  tmp;
+
+  led_ctrl(LED_RED);
+  delay(100);
+      sprintf(c, "GORJANC: cmd_write16()");
+
+  if( SFP_power_state!=SFP_ON )
+  {
+    cmd_response(STAT_FAIL);
+    return;    
+  }
+  if( arg_cnt==1 )
+  {
+    cmd_response(STAT_FAIL);
+    return;
+  }
+  if( arg_cnt>17 )
+  {
+    cmd_response(STAT_FAIL);
+    return;
+  }
+  //stream->println(">");
+  /* check the arguments */
+  for (i=1; i<arg_cnt; i++)
+  {
+    stat = cmdStr2Num16(args[i], 16, &dat[i]);  /* Convert hex string to integer */
+    if( stat )
+    {
+      //sprintf(c, "##### stat=%d", stat);
+      //stream->println(c);
+      cmd_response(STAT_FAIL);
+      return;    
+    }
+    //sprintf(c, "CNV dat[%d]=0x%04x", i, dat[i]);
+    //stream->println(c); 
+  }/* for */
+  
+  /* Write the data into SFP */
+  for (i=1; i<arg_cnt; i++)
+  {
+    //sprintf(c, "WRITE dat[%d]=0x%04x", i, dat[i]);
+    //stream->println(c);
+
+     /* check if device exists  */
+    tmp = i2c_eeprom_read_byte( SFP_address, SFP_mem_offset+i-1, &stat );
+    if( stat )
+    {
+      cmd_response(STAT_FAIL);
+      return;    
+    }
+    tmp <<= 8;
+    tmp |= (0xff & i2c_eeprom_read_byte( SFP_address, SFP_mem_offset+i-1, &stat ));
+
+    i2c_eeprom_write_byte( SFP_address, SFP_mem_offset+i-1, (byte)(dat[i]>>8) );
+    i2c_eeprom_write_byte( SFP_address, SFP_mem_offset+i-1, (byte)(dat[i]&0xff) );
+    delay(20);      /* Important delay !!!! */
+
+    /* verify written data */
+    tmp = i2c_eeprom_read_byte( SFP_address, SFP_mem_offset+i-1, &stat );
+    if( stat )
+    {
+      cmd_response(STAT_FAIL);
+      return;    
+    }
+    tmp <<= 8;
+    tmp |= (0xff & i2c_eeprom_read_byte( SFP_address, SFP_mem_offset+i-1, &stat ));
+
+    //sprintf(c, "READ dat[%d]=0x%02x", i, tmp);
+    //stream->println(c);
+    if( tmp != dat[i] )
+    {
+      cmd_response(STAT_FAIL);
+      return;    
+   
+    }
+  }/* for */
+  
+  cmd_response(STAT_OK);
+}
+
+/*****************************************/
 /*     cmd_read()                        */
 /*****************************************/
 void  cmd_read(int arg_cnt, char **args)
@@ -493,6 +592,64 @@ int       i;
   cmd_response(STAT_OK);
 }
 
+/*****************************************/
+/*     cmd_read16()                      */
+/*****************************************/
+void  cmd_read16(int arg_cnt, char **args)
+{
+int       stat;
+uint16_t  size;
+uint16_t  dat;
+int       i;
+
+  led_ctrl(LED_RED);
+  delay(100);
+  if( SFP_power_state!=SFP_ON )
+  {
+    cmd_response(STAT_FAIL);
+    return;    
+  }
+  if( arg_cnt!=2 )
+  {
+    cmd_response(STAT_FAIL);
+    return;
+  }
+  stat = cmdStr2Num(args[1], 16, &size);
+  if( stat )
+  {
+    cmd_response(STAT_FAIL);
+    return;    
+  }
+
+  if( size==0x00 ) size=0x80;
+  
+  if( (SFP_mem_offset+size) > 0x80 )
+  {
+    size = 0x80-SFP_mem_offset;
+  }
+  if( size==0 )
+  {
+    cmd_response(STAT_OK);
+    return;    
+  }
+  //sprintf(c, "size=0x%02x\n\r", size);
+  //stream->print(c); 
+  for( i=SFP_mem_offset; i<(SFP_mem_offset+size); i++ )
+  {
+          getSFPdata16(SFP_address, i, &dat, &stat);
+          if( stat )
+          {
+            cmd_response(STAT_FAIL);
+            return;    
+          }
+          sprintf(c, "%04x ", dat);  
+          stream->print(c);   
+          //stream->print(" ");
+         
+  }/* for i */
+  stream->println(""); 
+  cmd_response(STAT_OK);
+}
 /*****************************************/
 /*     SFP_DUMP()                        */
 /*****************************************/
@@ -1004,3 +1161,35 @@ char  *tmp;
     return 0;
 }
 
+/**************************************************************************/
+/*!
+    Convert a string to a number. The base must be specified, ie: "32" is a
+    different value in base 10 (decimal) and base 16 (hexadecimal).
+*/
+/**************************************************************************/
+int cmdStr2Num16(char *str, uint8_t base, uint16_t *val)
+{
+int   i=0;
+char  *tmp;
+
+    if( base == 16 )            /* only 4 digit hex nember are allowed */
+      if( strlen(str) != 4 )
+        return -1;
+        
+    tmp = str;
+    while( *tmp!='\0' && i<8 )
+    {
+      /* check if valid decimal number */
+      if( base == 10 )
+        if( !isDigit(*tmp) )
+          return -1;
+      /* check if valid hexadecimal number */
+      if( base == 16 )
+        if( !isHexadecimalDigit(*tmp) )
+          return -1;          
+      tmp++;
+      i++;
+    }
+    *val = strtol(str, NULL, base);
+    return 0;
+}
