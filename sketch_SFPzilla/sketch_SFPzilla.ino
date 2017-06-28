@@ -54,6 +54,7 @@ const char str_help12[] PROGMEM = "echo on       (set the echo for command ON)";
 const char str_help13[] PROGMEM = "echo off      (set the echo for command OFF)";
 const char str_help14[] PROGMEM = "version";
 const char str_help15[] PROGMEM = "help";
+const char str_help16[] PROGMEM = "dump_bank_ac  (dump SFP bank AC - device=0x56)";
 
 static Stream* stream;
 
@@ -77,6 +78,7 @@ static Stream* stream;
 /* standard SFP I2C addresses */
 #define SFP_ADDRESS_A0 0x50
 #define SFP_ADDRESS_A2 0x51
+#define SFP_ADDRESS_AC 0x56
 #define SFP_ADDRESS_B0 0x58
 #define SFP_ADDRESS_B2 0x59
 
@@ -96,6 +98,7 @@ void i2c_eeprom_write_byte( int deviceaddress, unsigned int eeaddress, byte data
 void i2c_eeprom_write_page( int deviceaddress, unsigned int eeaddresspage, byte* data, byte length );
 byte i2c_eeprom_read_byte( int deviceaddress, unsigned int eeaddress, int *stat );
 
+
 void  arg_display(int arg_cnt, char **args);
 void  cmd_ping(int arg_cnt, char **args);
 void  cmd_write(int arg_cnt, char **args);
@@ -108,6 +111,7 @@ void  cmd_A0(int arg_cnt, char **args);
 void  cmd_A2(int arg_cnt, char **args);
 void  cmd_B0(int arg_cnt, char **args);
 void  cmd_B2(int arg_cnt, char **args);
+void  cmd_AC(int arg_cnt, char **args);
 void  cmd_help(int arg_cnt, char **args);
 void  cmd_version(int arg_cnt, char **args);
 void  cmd_conf(int arg_cnt, char **args);
@@ -115,6 +119,7 @@ void  cmd_conf(int arg_cnt, char **args);
 void  cmd_response(char stat);
 
 void  SFP_DUMP(uint8_t sfp_bank);
+void  SFP_DUMP16(uint8_t sfp_bank);
 
 /********************************************************/
 /*     G L O B A L   D A T A                            */
@@ -149,20 +154,21 @@ void setup()
   Serial.begin (115200);
   cmdInit(&Serial);
 
-  cmdAdd("ping", cmd_ping);
-  cmdAdd("write", cmd_write);
-  cmdAdd("read", cmd_read);
-  cmdAdd("power", cmd_power);
-  cmdAdd("echo", cmd_echo);
-  cmdAdd("device", cmd_device);
-  cmdAdd("offset", cmd_offset);
-  cmdAdd("conf", cmd_conf);
-  cmdAdd("dump_bank_a0", cmd_A0);
-  cmdAdd("dump_bank_a2", cmd_A2);
-  cmdAdd("dump_bank_b0", cmd_B0);
-  cmdAdd("dump_bank_b2", cmd_B2);
-  cmdAdd("help", cmd_help);
-  cmdAdd("version", cmd_version);
+  cmdAdd((char*)"ping", cmd_ping);
+  cmdAdd((char*)"write", cmd_write);
+  cmdAdd((char*)"read", cmd_read);
+  cmdAdd((char*)"power", cmd_power);
+  cmdAdd((char*)"echo", cmd_echo);
+  cmdAdd((char*)"device", cmd_device);
+  cmdAdd((char*)"offset", cmd_offset);
+  cmdAdd((char*)"conf", cmd_conf);
+  cmdAdd((char*)"dump_bank_a0", cmd_A0);
+  cmdAdd((char*)"dump_bank_a2", cmd_A2);
+  cmdAdd((char*)"dump_bank_b0", cmd_B0);
+  cmdAdd((char*)"dump_bank_b2", cmd_B2);
+  cmdAdd((char*)"dump_bank_ac", cmd_AC);
+  cmdAdd((char*)"help", cmd_help);
+  cmdAdd((char*)"version", cmd_version);
   cmd_response(STAT_OK);
 
   Wire.begin();     /* Init i2c */
@@ -276,6 +282,8 @@ void  cmd_help(int arg_cnt, char **args)
     strcpy_P(buf, str_help14);
     stream->println(buf);
     strcpy_P(buf, str_help15);
+    stream->println(buf);
+    strcpy_P(buf, str_help16);
     stream->println(buf);
     cmd_response(STAT_OK);
 }
@@ -539,6 +547,49 @@ int       stat;
   
 }
 /*****************************************/
+/*     SFP_DUMP16()                      */
+/*****************************************/
+void  SFP_DUMP16(uint8_t sfp_bank)
+{
+uint16_t  data[20];
+uint8_t   i,j;
+int       stat;
+
+
+      if( SFP_power_state==SFP_ON )
+      {
+        led_ctrl(LED_RED); 
+
+        for( j=0; j<4; j++ )
+        {
+          for( i=0; i<8; i++ )
+          {
+            getSFPdata16(sfp_bank, i+j*4, &data[i], &stat);
+            if( stat )
+            {
+              cmd_response(STAT_FAIL);
+              return;    
+            }
+            sprintf(c, "%04x ", data[i]);  
+            stream->print(c);   
+            //stream->print(" ");
+       
+        
+          }/* for i */
+
+          stream->println("");   // END OF LINE
+ 
+        }/* for j */
+        cmd_response(STAT_OK);
+      }/* if Power ON */
+      else
+      {
+        cmd_response(STAT_FAIL);
+      }/* else power OFF */
+
+  
+}
+/*****************************************/
 /*     cmd_A0()                          */
 /*****************************************/
 void  cmd_A0(int arg_cnt, char **args)
@@ -552,6 +603,13 @@ void  cmd_A0(int arg_cnt, char **args)
 void  cmd_A2(int arg_cnt, char **args)
 {
   SFP_DUMP(SFP_ADDRESS_A2);  
+}
+/*****************************************/
+/*     cmd_AC()                          */
+/*****************************************/
+void  cmd_AC(int arg_cnt, char **args)
+{
+  SFP_DUMP16(SFP_ADDRESS_AC);  
 }
 /*****************************************/
 /*     cmd_B0()                          */
@@ -681,6 +739,18 @@ void getSFPdata(uint8_t sfp_bank, unsigned int offset, byte *a, int *stat)
     *a = i2c_eeprom_read_byte( sfp_bank, offset, stat );
 }
 
+/********************** getSFPdata16() ******************/
+void getSFPdata16(uint8_t sfp_bank, unsigned int offset, uint16_t *a, int *stat)
+{
+uint16_t temp;
+  
+    temp = i2c_eeprom_read_byte( sfp_bank, offset, stat );
+    temp <<= 8;
+    temp |= (0xff & i2c_eeprom_read_byte( sfp_bank, offset, stat ));
+
+    *a = temp;
+}
+
 /********************** i2c_eeprom_write_byte() ********************/
 void i2c_eeprom_write_byte( int deviceaddress, unsigned int eeaddress, byte data ) 
 {
@@ -706,6 +776,7 @@ void i2c_eeprom_write_byte( int deviceaddress, unsigned int eeaddress, byte data
       Wire.write(data[c]);
     Wire.endTransmission();
   }
+
 
 /********************** i2c_eeprom_read_byte() ********************/
   byte i2c_eeprom_read_byte( int deviceaddress, unsigned int eeaddress, int *stat ) 
